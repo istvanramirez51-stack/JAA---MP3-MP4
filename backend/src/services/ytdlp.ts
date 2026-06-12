@@ -5,6 +5,7 @@ import { jobQueue } from "./jobQueue"
 
 const YTDLP = process.env.YTDLP_BINARY_PATH || "yt-dlp"
 const TMP_DIR = process.env.TMP_DIR || "/tmp/rawload"
+const COOKIES_PATH = process.env.YTDLP_COOKIES_PATH || ""
 
 // Ensure tmp dir exists
 if (!fs.existsSync(TMP_DIR)) {
@@ -15,16 +16,27 @@ const PROGRESS_RE = /\[download\]\s+([\d.]+)%\s+of\s+~?\s*([\d.]+\s*\w+)\s+at\s+
 const DEST_RE = /\[(?:ExtractAudio|Merger|ffmpeg)\]\s+Destination:\s+(.+)/
 const ALREADY_RE = /\[download\]\s+(.+)\s+has already been downloaded/
 
-// Common args to bypass bot detection
-const BYPASS_ARGS = [
-  "--geo-bypass",
-  "--extractor-retries", "3",
-  "--retries", "3",
-  "--no-check-certificates",
-  "--user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-  "--add-header", "Accept-Language:en-US,en;q=0.9",
-  "--sleep-requests", "1",
-]
+function getBypassArgs(): string[] {
+  const args = [
+    "--geo-bypass",
+    "--extractor-retries", "3",
+    "--retries", "3",
+    "--no-check-certificates",
+    "--user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "--add-header", "Accept-Language:en-US,en;q=0.9",
+    "--sleep-requests", "1",
+  ]
+
+  // Add cookies if available
+  if (COOKIES_PATH && fs.existsSync(COOKIES_PATH)) {
+    args.push("--cookies", COOKIES_PATH)
+    console.log(`[yt-dlp] Using cookies from ${COOKIES_PATH}`)
+  } else {
+    console.log(`[yt-dlp] No cookies file found, proceeding without`)
+  }
+
+  return args
+}
 
 function formatBytes(str: string): string {
   return str.trim()
@@ -49,7 +61,7 @@ export function runDownload(jobId: string): void {
       "--no-warnings",
       "--progress",
       "--newline",
-      ...BYPASS_ARGS,
+      ...getBypassArgs(),
     ]
   } else {
     const height = job.quality === "1080" ? "1080" : "720"
@@ -62,7 +74,7 @@ export function runDownload(jobId: string): void {
       "--no-warnings",
       "--progress",
       "--newline",
-      ...BYPASS_ARGS,
+      ...getBypassArgs(),
     ]
   }
 
