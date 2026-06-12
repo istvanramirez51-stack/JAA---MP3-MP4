@@ -1,7 +1,7 @@
 {
   "build": {
     "builder": "nixpacks",
-    "buildCommand": "npm install && npm run build && curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_linux -o /app/yt-dlp && chmod +x /app/yt-dlp"
+    "buildCommand": "npm install && npm run build"
   },
   "deploy": {
     "startCommand": "npm run start",

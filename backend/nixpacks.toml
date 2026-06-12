@@ -1,0 +1,13 @@
+[phases.setup]
+nixPkgs = ["nodejs_20", "ffmpeg"]
+
+[phases.build]
+cmds = [
+  "npm install",
+  "npm run build",
+  "curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_linux -o /app/yt-dlp",
+  "chmod +x /app/yt-dlp"
+]
+
+[start]
+cmd = "npm run start"
