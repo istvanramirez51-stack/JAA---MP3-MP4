@@ -16,6 +16,11 @@ infoRouter.get("/", infoLimiter, validateUrl, (req: Request, res: Response) => {
     "--no-playlist",
     "--no-warnings",
     "--skip-download",
+    "--geo-bypass",
+    "--extractor-retries", "3",
+    "--no-check-certificates",
+    "--user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "--add-header", "Accept-Language:en-US,en;q=0.9",
   ]
 
   let output = ""
@@ -38,7 +43,9 @@ infoRouter.get("/", infoLimiter, validateUrl, (req: Request, res: Response) => {
       const msg = errOutput.includes("Private video")
         ? "This video is private."
         : errOutput.includes("not available")
-        ? "This video is not available."
+        ? "This video is not available in your region."
+        : errOutput.includes("Sign in")
+        ? "This video requires sign-in."
         : "Could not fetch video info. The URL may be invalid or unsupported."
       reply(() => res.status(422).json({ error: msg, code: "INFO_FAILED" }))
       return

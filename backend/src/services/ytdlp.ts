@@ -15,6 +15,17 @@ const PROGRESS_RE = /\[download\]\s+([\d.]+)%\s+of\s+~?\s*([\d.]+\s*\w+)\s+at\s+
 const DEST_RE = /\[(?:ExtractAudio|Merger|ffmpeg)\]\s+Destination:\s+(.+)/
 const ALREADY_RE = /\[download\]\s+(.+)\s+has already been downloaded/
 
+// Common args to bypass bot detection
+const BYPASS_ARGS = [
+  "--geo-bypass",
+  "--extractor-retries", "3",
+  "--retries", "3",
+  "--no-check-certificates",
+  "--user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+  "--add-header", "Accept-Language:en-US,en;q=0.9",
+  "--sleep-requests", "1",
+]
+
 function formatBytes(str: string): string {
   return str.trim()
 }
@@ -38,6 +49,7 @@ export function runDownload(jobId: string): void {
       "--no-warnings",
       "--progress",
       "--newline",
+      ...BYPASS_ARGS,
     ]
   } else {
     const height = job.quality === "1080" ? "1080" : "720"
@@ -50,6 +62,7 @@ export function runDownload(jobId: string): void {
       "--no-warnings",
       "--progress",
       "--newline",
+      ...BYPASS_ARGS,
     ]
   }
 
@@ -71,7 +84,6 @@ export function runDownload(jobId: string): void {
         continue
       }
 
-      // Detect conversion phase
       if (line.includes("[ExtractAudio]") || line.includes("[Merger]") || line.includes("[ffmpeg]")) {
         jobQueue.update(jobId, { status: "converting", percent: 99 })
       }
@@ -86,7 +98,6 @@ export function runDownload(jobId: string): void {
 
   proc.stderr.on("data", (chunk: Buffer) => {
     const text = chunk.toString()
-    // Only log real errors, not warnings
     if (text.includes("ERROR")) {
       console.error(`[yt-dlp][${jobId}] ${text.trim()}`)
     }
@@ -101,7 +112,6 @@ export function runDownload(jobId: string): void {
       return
     }
 
-    // If finalPath wasn't captured from stderr, find the file by jobId prefix
     if (!finalPath || !fs.existsSync(finalPath)) {
       const files = fs.readdirSync(TMP_DIR).filter(f => f.startsWith(jobId))
       if (files.length > 0) {
