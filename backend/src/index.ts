@@ -12,17 +12,24 @@ const PORT = process.env.PORT || 3001
 // CORS
 const allowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(",").map(o => o.trim())
-  : ["http://localhost:5173", "http://localhost:4173"]
+  : []
 
 app.use(cors({
   origin: (origin, cb) => {
-    if (!origin || allowedOrigins.includes(origin) || process.env.NODE_ENV !== "production") {
-      cb(null, true)
-    } else {
-      cb(new Error(`CORS: origin ${origin} not allowed`))
-    }
+    // Allow requests with no origin (mobile, curl, server-to-server)
+    if (!origin) return cb(null, true)
+    // Allow localhost always
+    if (origin.includes("localhost")) return cb(null, true)
+    // Allow if in whitelist
+    if (allowedOrigins.length === 0 || allowedOrigins.includes(origin)) return cb(null, true)
+    // Allow all vercel.app and railway.app subdomains
+    if (origin.endsWith(".vercel.app") || origin.endsWith(".railway.app")) return cb(null, true)
+    console.warn(`[CORS] Blocked origin: ${origin}`)
+    cb(new Error(`CORS: origin ${origin} not allowed`))
   },
   credentials: true,
+  methods: ["GET", "POST", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Accept", "ngrok-skip-browser-warning", "x-action"],
 }))
 
 app.use(express.json())
@@ -43,5 +50,5 @@ app.get("/health", (_req, res) => {
 
 app.listen(PORT, () => {
   console.log(`[rawload] API running on :${PORT}`)
-  console.log(`[rawload] Allowed origins: ${allowedOrigins.join(", ")}`)
+  console.log(`[rawload] Allowed origins: ${allowedOrigins.join(", ") || "all vercel.app + railway.app"}`)
 })
